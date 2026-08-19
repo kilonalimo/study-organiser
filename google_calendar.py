@@ -13,21 +13,27 @@ How this fits together:
 - We create (or reuse) a calendar named "Wisteria" in their account and
   remember its id, so every synced task lands there rather than in
   their main calendar.
+
+Note on HTTP: we talk to the Calendar API with plain `requests` calls
+rather than the googleapiclient "discovery" client. That client defaults
+to an httplib2-based transport, which doesn't work on hosts (like
+PythonAnywhere's free tier) that require routing outbound requests
+through a proxy. `requests` handles that transparently.
 """
 
 import os
 from datetime import datetime, timedelta
 
+import requests
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import Flow
-from googleapiclient.discovery import build
-from googleapiclient.errors import HttpError
 
 import db
 
 SCOPES = ["https://www.googleapis.com/auth/calendar"]
 CALENDAR_NAME = "Wisteria"
+API_BASE = "https://www.googleapis.com/calendar/v3"
 
 
 def _client_config():
@@ -72,8 +78,7 @@ def handle_oauth_callback(authorization_response_url, state):
     flow.fetch_token(authorization_response=authorization_response_url)
     creds = flow.credentials
 
-    service = build("calendar", "v3", credentials=creds)
-    calendar_id = _find_or_create_wisteria_calendar(service)
+    calendar_id = _find_or_create_wisteria_calendar(creds)
 
     db.save_google_auth(
         access_token=creds.token,
@@ -83,14 +88,22 @@ def handle_oauth_callback(authorization_response_url, state):
     )
 
 
-def _find_or_create_wisteria_calendar(service):
-    calendar_list = service.calendarList().list().execute()
-    for entry in calendar_list.get("items", []):
+def _headers(creds):
+    return {"Authorization": f"Bearer {creds.token}", "Content-Type": "application/json"}
+
+
+def _find_or_create_wisteria_calendar(creds):
+    resp = requests.get(f"{API_BASE}/users/me/calendarList", headers=_headers(creds), timeout=15)
+    resp.raise_for_status()
+    for entry in resp.json().get("items", []):
         if entry.get("summary") == CALENDAR_NAME:
             return entry["id"]
 
-    created = service.calendars().insert(body={"summary": CALENDAR_NAME}).execute()
-    return created["id"]
+    resp = requests.post(
+        f"{API_BASE}/calendars", headers=_headers(creds), json={"summary": CALENDAR_NAME}, timeout=15
+    )
+    resp.raise_for_status()
+    return resp.json()["id"]
 
 
 def _get_credentials():
@@ -121,15 +134,6 @@ def _get_credentials():
     return creds
 
 
-def _get_service_and_calendar():
-    creds = _get_credentials()
-    if creds is None:
-        return None, None
-    service = build("calendar", "v3", credentials=creds)
-    calendar_id = db.get_google_auth()["calendar_id"]
-    return service, calendar_id
-
-
 def sync_task(task):
     """
     Create or update the Google Calendar event for a task's planned_date.
@@ -138,29 +142,35 @@ def sync_task(task):
     a Calendar hiccup should never break the main app.
     """
     try:
-        service, calendar_id = _get_service_and_calendar()
-        if service is None:
+        creds = _get_credentials()
+        if creds is None:
             return
+        calendar_id = db.get_google_auth()["calendar_id"]
 
         if not task["planned_date"]:
-            _delete_event_if_any(service, calendar_id, task)
+            _delete_event_if_any(creds, calendar_id, task)
             return
 
         event_body = _event_body_for_task(task)
 
         if task["google_event_id"]:
-            try:
-                service.events().update(
-                    calendarId=calendar_id, eventId=task["google_event_id"], body=event_body
-                ).execute()
+            resp = requests.put(
+                f"{API_BASE}/calendars/{calendar_id}/events/{task['google_event_id']}",
+                headers=_headers(creds),
+                json=event_body,
+                timeout=15,
+            )
+            if resp.status_code == 404:
+                pass  # event was deleted on the Google side — fall through and recreate it
+            else:
+                resp.raise_for_status()
                 return
-            except HttpError as e:
-                if e.resp.status != 404:
-                    raise
-                # event was deleted on the Google side — fall through and recreate it
 
-        created = service.events().insert(calendarId=calendar_id, body=event_body).execute()
-        db.set_google_event_id(task["id"], created["id"])
+        resp = requests.post(
+            f"{API_BASE}/calendars/{calendar_id}/events", headers=_headers(creds), json=event_body, timeout=15
+        )
+        resp.raise_for_status()
+        db.set_google_event_id(task["id"], resp.json()["id"])
     except Exception:
         # Don't let a Google API problem break task creation/editing.
         pass
@@ -168,22 +178,25 @@ def sync_task(task):
 
 def delete_task_event(task):
     try:
-        service, calendar_id = _get_service_and_calendar()
-        if service is None:
+        creds = _get_credentials()
+        if creds is None:
             return
-        _delete_event_if_any(service, calendar_id, task)
+        calendar_id = db.get_google_auth()["calendar_id"]
+        _delete_event_if_any(creds, calendar_id, task)
     except Exception:
         pass
 
 
-def _delete_event_if_any(service, calendar_id, task):
+def _delete_event_if_any(creds, calendar_id, task):
     if not task["google_event_id"]:
         return
-    try:
-        service.events().delete(calendarId=calendar_id, eventId=task["google_event_id"]).execute()
-    except HttpError as e:
-        if e.resp.status != 404 and e.resp.status != 410:
-            raise
+    resp = requests.delete(
+        f"{API_BASE}/calendars/{calendar_id}/events/{task['google_event_id']}",
+        headers=_headers(creds),
+        timeout=15,
+    )
+    if resp.status_code not in (204, 404, 410):
+        resp.raise_for_status()
     db.set_google_event_id(task["id"], None)
 
 
