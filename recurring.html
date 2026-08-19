@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}Recurring — Wisteria{% endblock %}
+{% block content %}
+    <h1>Recurring tasks</h1>
+    <p class="hint">These repeat every week and get placed on the calendar automatically, on the same weekday. Give one an end date, or leave it open to keep repeating indefinitely.</p>
+
+    <section class="add-task">
+        <h2>Add a recurring task</h2>
+        <form action="{{ url_for('create_template') }}" method="post">
+            <label>
+                Title
+                <input type="text" name="title" required placeholder="e.g. TA office hours">
+            </label>
+
+            <label>
+                Role
+                <select name="role" required>
+                    {% for role in roles %}
+                        <option value="{{ role }}">{{ role }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+
+            <label>
+                Course (optional)
+                <input type="text" name="course" placeholder="e.g. Probability Theory">
+            </label>
+
+            <label>
+                Which day, every week
+                <select name="weekday" required>
+                    {% for name in weekday_names %}
+                        <option value="{{ loop.index0 }}">{{ name }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+
+            <label>
+                Repeat until (optional — leave blank to repeat indefinitely)
+                <input type="date" name="until_date">
+            </label>
+
+            <button type="submit">Add recurring task</button>
+        </form>
+    </section>
+
+    <section class="task-list">
+        <h2>Currently repeating</h2>
+        {% if not templates %}
+            <p class="empty">No recurring tasks yet.</p>
+        {% else %}
+            <ul>
+                {% for template in templates %}
+                    <li class="task role-{{ template['role']|lower }}">
+                        <span class="badge">{{ template['role'] }}</span>
+                        <span class="title">{{ template['title'] }}</span>
+                        {% if template['course'] %}<span class="course">{{ template['course'] }}</span>{% endif %}
+                        <span class="due">Every {{ weekday_names[template['weekday']] }}{% if template['until_date'] %} until {{ template['until_date'] }}{% endif %}</span>
+                        <form action="{{ url_for('delete_template', template_id=template['id']) }}" method="post" class="delete-form">
+                            <button type="submit" class="delete-btn" aria-label="Stop repeating">&times;</button>
+                        </form>
+                    </li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+    </section>
+{% endblock %}

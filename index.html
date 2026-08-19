@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block title %}Wisteria{% endblock %}
+{% block content %}
+    <h1>Wisteria</h1>
+
+    <section class="add-task">
+        <h2>Add a task</h2>
+        <form action="{{ url_for('create_task') }}" method="post">
+            <label>
+                Title
+                <input type="text" name="title" required placeholder="e.g. Problem set 4">
+            </label>
+
+            <label>
+                Role
+                <select name="role" required>
+                    {% for role in roles %}
+                        <option value="{{ role }}">{{ role }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+
+            <label>
+                Course (optional)
+                <input type="text" name="course" placeholder="e.g. MS-C1620">
+            </label>
+
+            <label>
+                Opens (optional)
+                <input type="date" name="opens_date">
+            </label>
+
+            <label>
+                Due date (optional)
+                <input type="date" name="due_date">
+            </label>
+
+            <button type="submit">Add task</button>
+        </form>
+    </section>
+
+    <section class="task-list">
+        <h2>Your tasks</h2>
+        {% if not tasks %}
+            <p class="empty">No tasks yet — add your first one above.</p>
+        {% else %}
+            <ul>
+                {% for task in tasks %}
+                    <li class="task role-{{ task['role']|lower }} {{ 'completed' if task['completed'] else '' }}">
+                        <form action="{{ url_for('toggle_task', task_id=task['id']) }}" method="post" class="toggle-form">
+                            <button type="submit" class="check" aria-label="Toggle complete">{{ '✔' if task['completed'] else '' }}</button>
+                        </form>
+                        <span class="badge">{{ task['role'] }}</span>
+                        <span class="title">{{ task['title'] }}</span>
+                        {% if task['course'] %}<span class="course">{{ task['course'] }}</span>{% endif %}
+                        {% if task['due_date'] %}<span class="due">Due {{ task['due_date'] }}</span>{% endif %}
+                        {% if task['recurring_template_id'] %}<span class="recurring-tag">repeats weekly</span>{% endif %}
+                        {% if not task['planned_date'] and not task['completed'] %}<span class="unplanned-tag">not planned</span>{% endif %}
+                        <a href="{{ url_for('edit_task_form', task_id=task['id']) }}" class="edit-link">Edit</a>
+                        <form action="{{ url_for('delete_task', task_id=task['id']) }}" method="post" class="delete-form">
+                            <button type="submit" class="delete-btn" aria-label="Delete task">&times;</button>
+                        </form>
+                    </li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+    </section>
+{% endblock %}

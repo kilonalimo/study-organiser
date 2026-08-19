@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}Calendar — Wisteria{% endblock %}
+{% block content %}
+    <h1>Calendar</h1>
+
+    <section class="week-nav">
+        <a href="{{ url_for('calendar_view', week=prev_week) }}" class="week-link">&larr; Previous</a>
+        <span class="week-label">{{ monday.strftime('%d %b') }} – {{ days[-1].strftime('%d %b %Y') }}</span>
+        <a href="{{ url_for('calendar_view', week=next_week) }}" class="week-link">Next &rarr;</a>
+    </section>
+
+    {% if unplanned %}
+        <section class="task-list unplanned-section">
+            <h2>Waiting to be planned</h2>
+            <p class="hint">Give each of these a day and it'll show up below on your calendar.</p>
+            <ul>
+                {% for task in unplanned %}
+                    <li class="task role-{{ task['role']|lower }}">
+                        <span class="badge">{{ task['role'] }}</span>
+                        <span class="title">{{ task['title'] }}</span>
+                        {% if task['due_date'] %}<span class="due">Due {{ task['due_date'] }}</span>{% endif %}
+                        <form action="{{ url_for('plan_task', task_id=task['id']) }}" method="post" class="plan-form">
+                            <input type="hidden" name="next" value="{{ url_for('calendar_view', week=current_week) }}">
+                            <input type="date" name="planned_date" required>
+                            <button type="submit">Plan</button>
+                        </form>
+                    </li>
+                {% endfor %}
+            </ul>
+        </section>
+    {% endif %}
+
+    <section class="task-list agenda">
+        <h2>This week</h2>
+        {% for day in days %}
+            <div class="day-block {{ 'today' if day == today else '' }}">
+                <h3>{{ day.strftime('%A, %d %b') }}</h3>
+                {% set day_tasks = tasks_by_day[day.isoformat()] %}
+                {% if not day_tasks %}
+                    <p class="empty">Nothing planned.</p>
+                {% else %}
+                    <ul>
+                        {% for task in day_tasks %}
+                            <li class="task role-{{ task['role']|lower }} {{ 'completed' if task['completed'] else '' }}">
+                                <form action="{{ url_for('toggle_task', task_id=task['id']) }}" method="post" class="toggle-form">
+                                    <input type="hidden" name="next" value="{{ url_for('calendar_view', week=current_week) }}">
+                                    <button type="submit" class="check" aria-label="Toggle complete">{{ '✔' if task['completed'] else '' }}</button>
+                                </form>
+                                <span class="badge">{{ task['role'] }}</span>
+                                <span class="title">{{ task['title'] }}</span>
+                                {% if task['course'] %}<span class="course">{{ task['course'] }}</span>{% endif %}
+                                {% if task['recurring_template_id'] %}<span class="recurring-tag">repeats</span>{% endif %}
+                                <a href="{{ url_for('edit_task_form', task_id=task['id']) }}" class="edit-link">Edit</a>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+            </div>
+        {% endfor %}
+    </section>
+{% endblock %}

@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}Edit task — Wisteria{% endblock %}
+{% block content %}
+    <h1>Edit task</h1>
+
+    <section class="add-task">
+        <form action="{{ url_for('edit_task', task_id=task['id']) }}" method="post">
+            <label>
+                Title
+                <input type="text" name="title" required value="{{ task['title'] }}">
+            </label>
+
+            <label>
+                Role
+                <select name="role" required>
+                    {% for role in roles %}
+                        <option value="{{ role }}" {{ 'selected' if role == task['role'] else '' }}>{{ role }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+
+            <label>
+                Course (optional)
+                <input type="text" name="course" value="{{ task['course'] or '' }}">
+            </label>
+
+            <label>
+                Opens (optional)
+                <input type="date" name="opens_date" value="{{ task['opens_date'] or '' }}">
+            </label>
+
+            <label>
+                Due date (optional)
+                <input type="date" name="due_date" value="{{ task['due_date'] or '' }}">
+            </label>
+
+            <label>
+                Planned date — when you'll actually work on it (optional)
+                <input type="date" name="planned_date" value="{{ task['planned_date'] or '' }}">
+            </label>
+
+            <button type="submit">Save changes</button>
+        </form>
+    </section>
+
+    <p><a href="{{ url_for('index') }}" class="back-link">&larr; Back to task list</a></p>
+{% endblock %}
