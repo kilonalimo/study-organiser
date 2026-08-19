@@ -3,7 +3,7 @@
 :root {
     --student: #ff6fa0;      /* pink */
     --ta: #b183e0;           /* lavender */
-    --association: #ff9f6e;  /* peach */
+    --guild: #ff9f6e;  /* peach */
     --bg: #fff3f8;
     --card: #ffffff;
     --text: #5a3b52;
@@ -15,15 +15,22 @@
 
 * { box-sizing: border-box; }
 
-.topnav {
+.bottomnav {
+    position: fixed;
+    left: 50%;
+    bottom: calc(16px + env(safe-area-inset-bottom));
+    transform: translateX(-50%);
     display: flex;
-    gap: 8px;
-    max-width: 640px;
-    margin: 0 auto 4px;
-    padding: 0 16px;
+    gap: 4px;
+    background: white;
+    padding: 6px;
+    border-radius: 999px;
+    box-shadow: 0 6px 20px rgba(217, 79, 133, 0.28);
+    border: 1.5px solid var(--border);
+    z-index: 100;
 }
 
-.topnav a {
+.bottomnav a {
     text-decoration: none;
     font-family: 'Quicksand', sans-serif;
     font-weight: 700;
@@ -33,7 +40,7 @@
     border-radius: 999px;
 }
 
-.topnav a.active {
+.bottomnav a.active {
     color: white;
     background: linear-gradient(135deg, #ff8fb8, #ff6fa0);
 }
@@ -44,7 +51,7 @@ body {
     color: var(--text);
     max-width: 640px;
     margin: 0 auto;
-    padding: 28px 16px 64px;
+    padding: 28px 16px calc(96px + env(safe-area-inset-bottom));
     min-height: 100vh;
 }
 
@@ -137,7 +144,7 @@ ul { list-style: none; padding: 0; margin: 0; }
 
 .task.role-student { border-left-color: var(--student); background: rgba(255, 111, 160, 0.04); }
 .task.role-ta { border-left-color: var(--ta); background: rgba(177, 131, 224, 0.05); }
-.task.role-association { border-left-color: var(--association); background: rgba(255, 159, 110, 0.05); }
+.task.role-guild { border-left-color: var(--guild); background: rgba(255, 159, 110, 0.05); }
 
 .task.completed { opacity: 0.45; text-decoration: line-through; }
 
@@ -151,7 +158,7 @@ ul { list-style: none; padding: 0; margin: 0; }
 }
 .role-student .badge { background: var(--student); }
 .role-ta .badge { background: var(--ta); }
-.role-association .badge { background: var(--association); }
+.role-guild .badge { background: var(--guild); }
 
 .title { font-weight: 700; }
 .course { font-size: 0.8rem; color: var(--muted); }
@@ -163,14 +170,19 @@ ul { list-style: none; padding: 0; margin: 0; }
 .check {
     width: 24px;
     height: 24px;
+    padding: 0;
     border-radius: 50%;
     border: 2px solid var(--border);
     background: white;
-    color: var(--association);
+    color: var(--guild);
     font-size: 0.8rem;
     line-height: 1;
     cursor: pointer;
     flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
 }
 .check:hover { border-color: var(--accent); }
 
