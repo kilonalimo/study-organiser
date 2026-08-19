@@ -8,13 +8,22 @@ Flask is a Python library for building web apps. The core idea:
   HTML template, which Flask fills in and sends back to the browser.
 """
 
+import os
 from datetime import date, timedelta
+from pathlib import Path
 
-from flask import Flask, render_template, request, redirect, url_for
+from dotenv import load_dotenv
+from flask import Flask, render_template, request, redirect, url_for, session
+
+# Explicit path so this works regardless of the web server's working
+# directory (WSGI processes don't always start in the project folder).
+load_dotenv(Path(__file__).parent / ".env")
 
 import db
+import google_calendar
 
 app = Flask(__name__)
+app.secret_key = os.environ.get("FLASK_SECRET_KEY", "dev-only-change-me")
 db.init_db()
 
 
@@ -23,6 +32,18 @@ def keep_recurring_tasks_fresh():
     # Cheap idempotent check — makes sure recurring tasks are generated
     # for the next several weeks before any page renders.
     db.ensure_recurring_instances(date.today())
+    # Push any newly-created planned tasks (e.g. fresh recurring instances)
+    # to Google Calendar if it's connected. No-ops instantly if not.
+    for task in db.get_tasks_needing_google_sync():
+        google_calendar.sync_task(task)
+
+
+@app.context_processor
+def inject_google_status():
+    return {
+        "google_configured": google_calendar.is_configured(),
+        "google_connected": google_calendar.is_connected(),
+    }
 
 
 @app.route("/")
@@ -64,6 +85,7 @@ def edit_task(task_id):
 
     if title and role in db.ROLES:
         db.update_task(task_id, title, role, course, opens_date, due_date, planned_date)
+        google_calendar.sync_task(db.get_task(task_id))
 
     return redirect(url_for("index"))
 
@@ -78,6 +100,9 @@ def toggle_task(task_id):
 
 @app.route("/tasks/<int:task_id>/delete", methods=["POST"])
 def delete_task(task_id):
+    task = db.get_task(task_id)
+    if task is not None:
+        google_calendar.delete_task_event(task)
     db.delete_task(task_id)
     return redirect(request.form.get("next") or url_for("index"))
 
@@ -86,6 +111,7 @@ def delete_task(task_id):
 def plan_task(task_id):
     planned_date = request.form.get("planned_date", "").strip()
     db.set_planned_date(task_id, planned_date)
+    google_calendar.sync_task(db.get_task(task_id))
     return redirect(request.form.get("next") or url_for("calendar_view"))
 
 
@@ -160,6 +186,29 @@ def create_template():
 def delete_template(template_id):
     db.delete_template(template_id)
     return redirect(url_for("recurring_view"))
+
+
+@app.route("/connect-google")
+def connect_google():
+    auth_url, state = google_calendar.build_authorization_url()
+    session["google_oauth_state"] = state
+    return redirect(auth_url)
+
+
+@app.route("/oauth2callback")
+def oauth2callback():
+    state = session.get("google_oauth_state")
+    google_calendar.handle_oauth_callback(request.url, state)
+    # Sync anything already planned so the calendar fills in immediately.
+    for task in db.get_tasks_needing_google_sync():
+        google_calendar.sync_task(task)
+    return redirect(url_for("index"))
+
+
+@app.route("/disconnect-google", methods=["POST"])
+def disconnect_google():
+    db.disconnect_google()
+    return redirect(url_for("index"))
 
 
 if __name__ == "__main__":

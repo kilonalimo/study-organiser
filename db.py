@@ -63,6 +63,21 @@ def init_db():
         )
         """
     )
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS google_auth (
+            id INTEGER PRIMARY KEY CHECK (id = 1),
+            access_token TEXT,
+            refresh_token TEXT,
+            token_expiry TEXT,
+            calendar_id TEXT
+        )
+        """
+    )
+    # tasks.google_event_id links a task to the Google Calendar event it created.
+    existing_columns = {row["name"] for row in conn.execute("PRAGMA table_info(tasks)").fetchall()}
+    if "google_event_id" not in existing_columns:
+        conn.execute("ALTER TABLE tasks ADD COLUMN google_event_id TEXT")
     conn.commit()
     conn.close()
 
@@ -160,6 +175,62 @@ def set_completed(task_id, completed):
 def delete_task(task_id):
     conn = get_connection()
     conn.execute("DELETE FROM tasks WHERE id = ?", (task_id,))
+    conn.commit()
+    conn.close()
+
+
+def get_tasks_needing_google_sync():
+    """Planned, not-yet-synced tasks — mainly catches freshly auto-generated recurring instances."""
+    conn = get_connection()
+    rows = conn.execute(
+        """
+        SELECT * FROM tasks
+        WHERE planned_date IS NOT NULL AND planned_date != ''
+          AND google_event_id IS NULL
+        """
+    ).fetchall()
+    conn.close()
+    return rows
+
+
+def set_google_event_id(task_id, google_event_id):
+    conn = get_connection()
+    conn.execute("UPDATE tasks SET google_event_id = ? WHERE id = ?", (google_event_id, task_id))
+    conn.commit()
+    conn.close()
+
+
+# ---------- Google Calendar connection ----------
+
+def get_google_auth():
+    conn = get_connection()
+    row = conn.execute("SELECT * FROM google_auth WHERE id = 1").fetchone()
+    conn.close()
+    return row
+
+
+def save_google_auth(access_token, refresh_token, token_expiry, calendar_id):
+    conn = get_connection()
+    conn.execute(
+        """
+        INSERT INTO google_auth (id, access_token, refresh_token, token_expiry, calendar_id)
+        VALUES (1, ?, ?, ?, ?)
+        ON CONFLICT(id) DO UPDATE SET
+            access_token = excluded.access_token,
+            refresh_token = COALESCE(excluded.refresh_token, google_auth.refresh_token),
+            token_expiry = excluded.token_expiry,
+            calendar_id = excluded.calendar_id
+        """,
+        (access_token, refresh_token, token_expiry, calendar_id),
+    )
+    conn.commit()
+    conn.close()
+
+
+def disconnect_google():
+    conn = get_connection()
+    conn.execute("DELETE FROM google_auth WHERE id = 1")
+    conn.execute("UPDATE tasks SET google_event_id = NULL")
     conn.commit()
     conn.close()
 
