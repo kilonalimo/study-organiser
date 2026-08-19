@@ -13,6 +13,19 @@
         <a href="{{ url_for('recurring_view') }}" class="{{ 'active' if request.endpoint in ['recurring_view', 'create_template'] else '' }}">Recurring</a>
     </nav>
 
+    {% if google_configured %}
+        <div class="google-status">
+            {% if google_connected %}
+                <span class="google-connected">Google Calendar connected</span>
+                <form action="{{ url_for('disconnect_google') }}" method="post">
+                    <button type="submit" class="google-disconnect">Disconnect</button>
+                </form>
+            {% else %}
+                <a href="{{ url_for('connect_google') }}" class="google-connect-link">Connect Google Calendar</a>
+            {% endif %}
+        </div>
+    {% endif %}
+
     {% block content %}{% endblock %}
 </body>
 </html>
