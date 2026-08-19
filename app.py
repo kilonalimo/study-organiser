@@ -27,6 +27,15 @@ app.secret_key = os.environ.get("FLASK_SECRET_KEY", "dev-only-change-me")
 db.init_db()
 
 
+@app.template_filter("findate")
+def format_finnish_date(iso_date_str):
+    """Turn '2026-08-26' into '26.8.2026' (Finnish date style, no leading zeros)."""
+    if not iso_date_str:
+        return ""
+    year, month, day = iso_date_str.split("-")
+    return f"{int(day)}.{int(month)}.{int(year)}"
+
+
 @app.before_request
 def keep_recurring_tasks_fresh():
     # Cheap idempotent check — makes sure recurring tasks are generated

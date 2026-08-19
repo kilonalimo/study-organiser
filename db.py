@@ -14,7 +14,7 @@ from pathlib import Path
 DB_PATH = Path(__file__).parent / "study.db"
 
 # The three "hats" the app organizes tasks by.
-ROLES = ["Student", "TA", "Association"]
+ROLES = ["Student", "TA", "Guild"]
 
 # Python's date.weekday(): Monday = 0 ... Sunday = 6
 WEEKDAY_NAMES = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
@@ -78,6 +78,11 @@ def init_db():
     existing_columns = {row["name"] for row in conn.execute("PRAGMA table_info(tasks)").fetchall()}
     if "google_event_id" not in existing_columns:
         conn.execute("ALTER TABLE tasks ADD COLUMN google_event_id TEXT")
+
+    # "Association" was renamed to "Guild" — bring any existing rows along.
+    conn.execute("UPDATE tasks SET role = 'Guild' WHERE role = 'Association'")
+    conn.execute("UPDATE recurring_templates SET role = 'Guild' WHERE role = 'Association'")
+
     conn.commit()
     conn.close()
 
