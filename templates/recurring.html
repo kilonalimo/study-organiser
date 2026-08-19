@@ -9,7 +9,7 @@
         <form action="{{ url_for('create_template') }}" method="post">
             <label>
                 Title
-                <input type="text" name="title" required placeholder="e.g. TA office hours">
+                <input type="text" name="title" required>
             </label>
 
             <label>
@@ -23,7 +23,7 @@
 
             <label>
                 Course (optional)
-                <input type="text" name="course" placeholder="e.g. Probability Theory">
+                <input type="text" name="course">
             </label>
 
             <label>
@@ -55,7 +55,7 @@
                         <span class="badge">{{ template['role'] }}</span>
                         <span class="title">{{ template['title'] }}</span>
                         {% if template['course'] %}<span class="course">{{ template['course'] }}</span>{% endif %}
-                        <span class="due">Every {{ weekday_names[template['weekday']] }}{% if template['until_date'] %} until {{ template['until_date'] }}{% endif %}</span>
+                        <span class="due">Every {{ weekday_names[template['weekday']] }}{% if template['until_date'] %} until {{ template['until_date']|findate }}{% endif %}</span>
                         <form action="{{ url_for('delete_template', template_id=template['id']) }}" method="post" class="delete-form">
                             <button type="submit" class="delete-btn" aria-label="Stop repeating">&times;</button>
                         </form>

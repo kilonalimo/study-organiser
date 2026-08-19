@@ -18,7 +18,7 @@
                     <li class="task role-{{ task['role']|lower }}">
                         <span class="badge">{{ task['role'] }}</span>
                         <span class="title">{{ task['title'] }}</span>
-                        {% if task['due_date'] %}<span class="due">Due {{ task['due_date'] }}</span>{% endif %}
+                        {% if task['due_date'] %}<span class="due">Due {{ task['due_date']|findate }}</span>{% endif %}
                         <form action="{{ url_for('plan_task', task_id=task['id']) }}" method="post" class="plan-form">
                             <input type="hidden" name="next" value="{{ url_for('calendar_view', week=current_week) }}">
                             <input type="date" name="planned_date" required>

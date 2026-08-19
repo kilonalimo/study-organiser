@@ -8,7 +8,7 @@
         <form action="{{ url_for('create_task') }}" method="post">
             <label>
                 Title
-                <input type="text" name="title" required placeholder="e.g. Problem set 4">
+                <input type="text" name="title" required>
             </label>
 
             <label>
@@ -22,7 +22,7 @@
 
             <label>
                 Course (optional)
-                <input type="text" name="course" placeholder="e.g. MS-C1620">
+                <input type="text" name="course">
             </label>
 
             <label>
@@ -53,7 +53,7 @@
                         <span class="badge">{{ task['role'] }}</span>
                         <span class="title">{{ task['title'] }}</span>
                         {% if task['course'] %}<span class="course">{{ task['course'] }}</span>{% endif %}
-                        {% if task['due_date'] %}<span class="due">Due {{ task['due_date'] }}</span>{% endif %}
+                        {% if task['due_date'] %}<span class="due">Due {{ task['due_date']|findate }}</span>{% endif %}
                         {% if task['recurring_template_id'] %}<span class="recurring-tag">repeats weekly</span>{% endif %}
                         {% if not task['planned_date'] and not task['completed'] %}<span class="unplanned-tag">not planned</span>{% endif %}
                         <a href="{{ url_for('edit_task_form', task_id=task['id']) }}" class="edit-link">Edit</a>
