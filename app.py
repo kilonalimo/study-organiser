@@ -55,6 +55,13 @@ def inject_google_status():
     }
 
 
+@app.context_processor
+def inject_today():
+    # Available on every page — used for the small date line under the
+    # "Wisteria" header.
+    return {"today": date.today()}
+
+
 @app.route("/")
 def index():
     tasks = db.get_all_tasks()
