@@ -4,7 +4,7 @@
     <h1>Recurring tasks</h1>
     <p class="hint">These repeat every week and get placed on the calendar automatically, on the same weekday. Give one an end date, or leave it open to keep repeating indefinitely.</p>
 
-    <section class="add-task">
+    <section class="glass add-task">
         <h2>Add a recurring task</h2>
         <form action="{{ url_for('create_template') }}" method="post">
             <label>
@@ -44,7 +44,7 @@
         </form>
     </section>
 
-    <section class="task-list">
+    <section class="glass task-list">
         <h2>Currently repeating</h2>
         {% if not templates %}
             <p class="empty">No recurring tasks yet.</p>

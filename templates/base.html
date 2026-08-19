@@ -7,25 +7,39 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-    {% if google_configured %}
-        <div class="google-status">
-            {% if google_connected %}
-                <span class="google-connected">Google Calendar connected</span>
-                <form action="{{ url_for('disconnect_google') }}" method="post">
-                    <button type="submit" class="google-disconnect">Disconnect</button>
-                </form>
-            {% else %}
-                <a href="{{ url_for('connect_google') }}" class="google-connect-link">Connect Google Calendar</a>
+    <div class="bg"></div>
+
+    <div class="content">
+        <div class="eyebrow-row">
+            <span class="eyebrow">Wisteria</span>
+            {% if google_configured %}
+                {% if google_connected %}
+                    <form action="{{ url_for('disconnect_google') }}" method="post" class="google-form">
+                        <span class="google-connected">Google Calendar connected</span>
+                        <button type="submit" class="google-disconnect">Disconnect</button>
+                    </form>
+                {% else %}
+                    <a href="{{ url_for('connect_google') }}" class="google-connect-link">Connect Google Calendar</a>
+                {% endif %}
             {% endif %}
         </div>
-    {% endif %}
 
-    {% block content %}{% endblock %}
+        {% block content %}{% endblock %}
+    </div>
 
     <nav class="bottomnav">
-        <a href="{{ url_for('index') }}" class="{{ 'active' if request.endpoint == 'index' else '' }}">Tasks</a>
-        <a href="{{ url_for('calendar_view') }}" class="{{ 'active' if request.endpoint == 'calendar_view' else '' }}">Calendar</a>
-        <a href="{{ url_for('recurring_view') }}" class="{{ 'active' if request.endpoint in ['recurring_view', 'create_template'] else '' }}">Recurring</a>
+        <a href="{{ url_for('index') }}" class="{{ 'active' if request.endpoint == 'index' else '' }}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="20" y2="6"></line><line x1="8" y1="12" x2="20" y2="12"></line><line x1="8" y1="18" x2="20" y2="18"></line><circle cx="4" cy="6" r="1.4" fill="currentColor" stroke="none"></circle><circle cx="4" cy="12" r="1.4" fill="currentColor" stroke="none"></circle><circle cx="4" cy="18" r="1.4" fill="currentColor" stroke="none"></circle></svg>
+            Tasks
+        </a>
+        <a href="{{ url_for('calendar_view') }}" class="{{ 'active' if request.endpoint == 'calendar_view' else '' }}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="16" rx="3"></rect><line x1="3.5" y1="10" x2="20.5" y2="10"></line><line x1="8" y1="3" x2="8" y2="7"></line><line x1="16" y1="3" x2="16" y2="7"></line></svg>
+            Calendar
+        </a>
+        <a href="{{ url_for('recurring_view') }}" class="{{ 'active' if request.endpoint in ['recurring_view', 'create_template'] else '' }}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 0 1 14-5.2M20 12a8 8 0 0 1-14 5.2"></path><polyline points="18 3 18 7 14 7"></polyline><polyline points="6 21 6 17 10 17"></polyline></svg>
+            Recurring
+        </a>
     </nav>
 </body>
 </html>
