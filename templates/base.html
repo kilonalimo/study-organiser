@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}Study Organizer{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <nav class="topnav">
+        <a href="{{ url_for('index') }}" class="{{ 'active' if request.endpoint == 'index' else '' }}">Tasks</a>
+        <a href="{{ url_for('calendar_view') }}" class="{{ 'active' if request.endpoint == 'calendar_view' else '' }}">Calendar</a>
+        <a href="{{ url_for('recurring_view') }}" class="{{ 'active' if request.endpoint in ['recurring_view', 'create_template'] else '' }}">Recurring</a>
+    </nav>
+
+    {% block content %}{% endblock %}
+</body>
+</html>
